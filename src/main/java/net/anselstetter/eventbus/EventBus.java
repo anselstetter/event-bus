@@ -148,7 +148,7 @@ public class EventBus {
      */
     public static interface EventCallback<T> {
 
-        public void notify(T event);
+        public void onNotify(T event);
     }
 
     /**

@@ -38,7 +38,7 @@ public class ThreadEnforcerTest {
 
     private final EventBus.EventCallback<TestEvent> callback = new EventBus.EventCallback<TestEvent>() {
         @Override
-        public void notify(TestEvent event) {
+        public void onNotify(TestEvent event) {
             // TODO Auto-generated method stub
         }
     };

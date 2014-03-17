@@ -45,7 +45,7 @@ public class CallbackTest {
     public void testDelivery() {
         bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
             @Override
-            public void notify(TestEvent event) {
+            public void onNotify(TestEvent event) {
                 result = event.TEST;
             }
         });

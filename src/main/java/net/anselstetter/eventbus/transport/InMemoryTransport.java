@@ -28,6 +28,6 @@ public class InMemoryTransport implements EventTransport {
 
     @Override
     public void deliver(Event event, EventBus.EventCallback<Event> callback) {
-        callback.notify(event);
+        callback.onNotify(event);
     }
 }

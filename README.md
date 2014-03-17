@@ -10,7 +10,7 @@ Usage:
 
     bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
         @Override
-        public void notify(TestEvent event) {
+        public void onNotify(TestEvent event) {
             // Do something
         }
     });
