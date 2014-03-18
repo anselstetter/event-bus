@@ -41,6 +41,7 @@ public class EventBus {
     private final Thread runningThread;
     private final String identifier;
     private final Map<Class<? extends Event>, List<EventCallback<? extends Event>>> subscribers;
+    private final Map<Class<? extends Event>, Event> lastEvent;
 
     /**
      * Constructor
@@ -55,6 +56,7 @@ public class EventBus {
         this.runningThread = Thread.currentThread();
         this.identifier = identifier;
         this.subscribers = new HashMap<>();
+        this.lastEvent = new HashMap<>();
     }
 
     /**
@@ -64,6 +66,18 @@ public class EventBus {
      * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
      */
     public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback) {
+        register(cls, callback, false);
+    }
+
+    /**
+     * Register a callback for a specific event
+     *
+     * @param cls              Lookup class for {@link #subscribers}
+     * @param callback         Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+     * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
+     */
+    @SuppressWarnings("unchecked")
+    public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent) {
         threadEnforcer.enforce(this);
 
         if (!subscribers.containsKey(cls)) {
@@ -74,6 +88,10 @@ public class EventBus {
 
         if (!list.contains(callback)) {
             list.add(callback);
+
+            if (deliverLastEvent && lastEvent.containsKey(cls)) {
+                transport.deliver(lastEvent.get(cls), (EventCallback<Event>) callback);
+            }
         }
     }
 
@@ -96,6 +114,14 @@ public class EventBus {
     }
 
     /**
+     * Clear all subscribers and event history
+     */
+    public void reset() {
+        subscribers.clear();
+        lastEvent.clear();
+    }
+
+    /**
      * Notify all subscribers listening to the posted event type
      *
      * @param event Event to deliver to all subscribers
@@ -103,6 +129,7 @@ public class EventBus {
     @SuppressWarnings("unchecked")
     public void post(Event event) {
         threadEnforcer.enforce(this);
+        lastEvent.put(event.getClass(), event);
 
         List<EventCallback<? extends Event>> list = subscribers.get(event.getClass());
 

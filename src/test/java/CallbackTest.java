@@ -27,6 +27,8 @@ import static org.junit.Assert.assertEquals;
  */
 public class CallbackTest {
 
+    final String EXPECTED_RESULT = "SUCCESS";
+
     private class TestEvent extends Event {
 
         public final String TEST;
@@ -43,6 +45,9 @@ public class CallbackTest {
 
     @Test
     public void testDelivery() {
+        result = null;
+
+        bus.reset();
         bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
             @Override
             public void onNotify(TestEvent event) {
@@ -50,9 +55,33 @@ public class CallbackTest {
             }
         });
 
-        final String EXPECTED_RESULT = "SUCCESS";
         bus.post(new TestEvent(EXPECTED_RESULT));
 
         assertEquals("result shoud be " + EXPECTED_RESULT, result, EXPECTED_RESULT);
+    }
+
+    @Test
+    public void testDeliveryWithInitialEvent() {
+        bus.reset();
+        bus.post(new TestEvent(EXPECTED_RESULT));
+        bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
+            @Override
+            public void onNotify(TestEvent event) {
+                result = event.TEST;
+            }
+        }, true);
+
+        assertEquals("result shoud be " + EXPECTED_RESULT, result, EXPECTED_RESULT);
+
+        result = null;
+
+        bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
+            @Override
+            public void onNotify(TestEvent event) {
+                result = event.TEST;
+            }
+        });
+
+        assertEquals("result shoud be null", result, null);
     }
 }
