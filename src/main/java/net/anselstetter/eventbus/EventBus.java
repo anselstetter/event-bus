@@ -42,6 +42,7 @@ public class EventBus {
     private final String identifier;
     private final Map<Class<? extends Event>, List<EventCallback<? extends Event>>> subscribers;
     private final Map<Class<? extends Event>, Event> lastEvent;
+    private final Map<String, SubscriptionHolder> taggedSubscriptions;
 
     /**
      * Constructor
@@ -57,6 +58,7 @@ public class EventBus {
         this.identifier = identifier;
         this.subscribers = new HashMap<>();
         this.lastEvent = new HashMap<>();
+        this.taggedSubscriptions = new HashMap<>();
     }
 
     /**
@@ -78,6 +80,31 @@ public class EventBus {
      */
     @SuppressWarnings("unchecked")
     public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent) {
+        register(cls, callback, deliverLastEvent, null);
+    }
+
+    /**
+     * Register a callback for a specific event
+     *
+     * @param cls      Lookup class for {@link #subscribers}
+     * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+     * @param tag      A tag for referencing event subscriptions later
+     */
+    @SuppressWarnings("unchecked")
+    public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback, String tag) {
+        register(cls, callback, false, tag);
+    }
+
+    /**
+     * Register a callback for a specific event
+     *
+     * @param cls              Lookup class for {@link #subscribers}
+     * @param callback         Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+     * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
+     * @param tag              A tag for referencing event subscriptions later
+     */
+    @SuppressWarnings("unchecked")
+    public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent, String tag) {
         threadEnforcer.enforce(this);
 
         if (!subscribers.containsKey(cls)) {
@@ -89,9 +116,15 @@ public class EventBus {
         if (!list.contains(callback)) {
             list.add(callback);
 
+            if (tag != null) {
+                taggedSubscriptions.put(tag, new SubscriptionHolder(cls, callback));
+            }
+
             if (deliverLastEvent && lastEvent.containsKey(cls)) {
                 transport.deliver(lastEvent.get(cls), (EventCallback<Event>) callback);
             }
+        } else {
+            throw new IllegalStateException("Event bus " + toString() + " already has a registered callback of type: " + callback + " for class: " + cls);
         }
     }
 
@@ -109,7 +142,33 @@ public class EventBus {
 
             if (list.contains(callback)) {
                 list.remove(callback);
+            } else {
+                throw new IllegalStateException("Event bus " + toString() + " does not contain a callback of type: " + callback + " for class: " + cls);
             }
+        } else {
+            throw new IllegalStateException("Event bus " + toString() + " does not maintain a subscription list of class: " + cls);
+        }
+    }
+
+    /**
+     * Unregister a callback for a specific event
+     *
+     * @param tag A tag for referencing event subscriptions
+     */
+    public void unregister(String tag) {
+        threadEnforcer.enforce(this);
+
+        SubscriptionHolder holder = null;
+
+        if (hasTaggedSubscriber(tag)) {
+            holder = taggedSubscriptions.get(tag);
+        }
+
+        if (holder != null) {
+            unregister(holder.getEventClass(), holder.getEventCallback());
+            taggedSubscriptions.remove(tag);
+        } else {
+            throw new IllegalStateException("Event bus " + toString() + " does not contain a event subscription matching this tag: " + tag);
         }
     }
 
@@ -154,6 +213,15 @@ public class EventBus {
     }
 
     /**
+     * Get the number of registered subscribers for an event type
+     *
+     * @param tag A tag for referencing event subscriptions
+     */
+    public boolean hasTaggedSubscriber(String tag) {
+        return taggedSubscriptions.containsKey(tag);
+    }
+
+    /**
      * Returns the thread, where the bus was instantiated. Can be used in {@link net.anselstetter.eventbus.ThreadEnforcer}
      *
      * @return Current thread
@@ -165,6 +233,25 @@ public class EventBus {
     @Override
     public String toString() {
         return "[EventBus \"" + identifier + "\"]";
+    }
+
+    private class SubscriptionHolder {
+
+        private final Class<? extends Event> eventClass;
+        private final EventCallback<? extends Event> eventCallback;
+
+        public SubscriptionHolder(Class<? extends Event> eventClass, EventCallback<? extends Event> eventCallback) {
+            this.eventClass = eventClass;
+            this.eventCallback = eventCallback;
+        }
+
+        public Class<? extends Event> getEventClass() {
+            return eventClass;
+        }
+
+        public EventCallback<? extends Event> getEventCallback() {
+            return eventCallback;
+        }
     }
 
     /**

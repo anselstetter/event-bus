@@ -57,7 +57,7 @@ public class CallbackTest {
 
         bus.post(new TestEvent(EXPECTED_RESULT));
 
-        assertEquals("result shoud be " + EXPECTED_RESULT, result, EXPECTED_RESULT);
+        assertEquals("result shoud be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class CallbackTest {
             }
         }, true);
 
-        assertEquals("result shoud be " + EXPECTED_RESULT, result, EXPECTED_RESULT);
+        assertEquals("result shoud be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
 
         result = null;
 
@@ -82,6 +82,6 @@ public class CallbackTest {
             }
         });
 
-        assertEquals("result shoud be null", result, null);
+        assertEquals("result shoud be null", null, result);
     }
 }

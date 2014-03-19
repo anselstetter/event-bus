@@ -39,7 +39,7 @@ public class ThreadEnforcerTest {
     private final EventBus.EventCallback<TestEvent> callback = new EventBus.EventCallback<TestEvent>() {
         @Override
         public void onNotify(TestEvent event) {
-            // TODO Auto-generated method stub
+
         }
     };
 
@@ -49,6 +49,8 @@ public class ThreadEnforcerTest {
 
     @Test
     public void testRegisterOnDifferentThreadShouldFail() {
+        bus.reset();
+
         Thread newThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -61,11 +63,15 @@ public class ThreadEnforcerTest {
 
     @Test
     public void testRegisterOnSameThreadShouldPass() {
+        bus.reset();
         bus.register(TestEvent.class, callback);
     }
 
     @Test
     public void testUnregisterOnDifferentThreadShouldFail() {
+        bus.reset();
+        bus.register(TestEvent.class, callback);
+
         Thread newThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -78,11 +84,16 @@ public class ThreadEnforcerTest {
 
     @Test
     public void testUnregisterOnSameThreadShouldPass() {
+        bus.reset();
+        bus.register(TestEvent.class, callback);
         bus.unregister(TestEvent.class, callback);
     }
 
     @Test
     public void testPostOnDifferentThreadShouldFail() {
+        bus.reset();
+        bus.register(TestEvent.class, callback);
+
         Thread newThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -95,6 +106,8 @@ public class ThreadEnforcerTest {
 
     @Test
     public void testPostOnSameThreadShouldPass() {
+        bus.reset();
+        bus.register(TestEvent.class, callback);
         bus.post(new TestEvent());
     }
 }
