@@ -8,6 +8,7 @@ Usage:
             .setIdentifier("identifier")
             .build();
 
+    // Normal subscription
     bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
         @Override
         public void onNotify(TestEvent event) {
@@ -15,7 +16,35 @@ Usage:
         }
     });
 
+    // Deliver last posted event on registration
+    bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
+        @Override
+        public void onNotify(TestEvent event) {
+            // Do something
+        }
+    }, true);
+
+    // Tag based subscription
+    // You can call bus.unregister("TAG") later
+    bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
+        @Override
+        public void onNotify(TestEvent event) {
+            // Do something
+        }
+    }, "TAG");
+
+    // Tag based subscription with last event delivery on registration
+    bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
+        @Override
+        public void onNotify(TestEvent event) {
+            // Do something
+        }
+    }, true, "TAG");
+
     bus.post(new TestEvent("payload"));
+
+    bus.unregister(TestEvent.class, callback);
+    bus.unregister("TAG")
 
 This bus does not guarantee uniqueness.
 You can have as many buses as you want.

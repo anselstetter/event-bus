@@ -96,6 +96,17 @@ public class EventBus {
     /**
      * Register a callback for a specific event
      *
+     * @param cls              Lookup class for {@link #subscribers}
+     * @param callback         Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+     * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
+     */
+    public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent, String tag) {
+        register(new CallbackSubscription(cls, callback, tag), deliverLastEvent);
+    }
+
+    /**
+     * Register a callback for a specific event
+     *
      * @param subscription Subscription class containing the event, callback and a tag {@link net.anselstetter.eventbus.EventBus.CallbackSubscription}
      */
     private void register(CallbackSubscription subscription, boolean deliverLastEvent) {
@@ -255,7 +266,6 @@ public class EventBus {
     public String toString() {
         return "[EventBus \"" + identifier + "\"]";
     }
-
 
     /**
      * Holder class to encapsulate an event, callback and tag
