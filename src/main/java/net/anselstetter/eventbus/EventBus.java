@@ -173,8 +173,6 @@ public class EventBus {
      * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
      */
     public void unregister(Class<? extends Event> cls, EventCallback<? extends Event> callback) {
-        threadEnforcer.enforce(this);
-
         unregister(new CallbackSubscription(cls, callback));
     }
 
@@ -184,8 +182,6 @@ public class EventBus {
      * @param tag A tag for referencing event subscriptions
      */
     public void unregister(String tag) {
-        threadEnforcer.enforce(this);
-
         CallbackSubscription subscription = null;
 
         if (hasTaggedSubscriber(tag)) {
@@ -205,6 +201,7 @@ public class EventBus {
     public void reset() {
         subscribers.clear();
         lastEvent.clear();
+        taggedSubscriptions.clear();
     }
 
     /**
