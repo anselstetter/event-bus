@@ -68,7 +68,7 @@ public class EventBus {
 	 * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
 	 * @return The EventBus
 	 */
-	public EventBus register(Class<? extends Event> cls, EventCallback<? extends Event> callback) {
+	public <T extends Event> EventBus register(Class<T> cls, EventCallback<T> callback) {
 		return register(new CallbackSubscription(cls, callback), false);
 	}
 
@@ -80,7 +80,7 @@ public class EventBus {
 	 * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
 	 * @return The EventBus
 	 */
-	public EventBus register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent) {
+	public <T extends Event> EventBus register(Class<T> cls, EventCallback<T> callback, boolean deliverLastEvent) {
 		return register(new CallbackSubscription(cls, callback), deliverLastEvent);
 	}
 
@@ -92,7 +92,7 @@ public class EventBus {
 	 * @param tag      A tag for referencing event subscriptions later
 	 * @return The EventBus
 	 */
-	public EventBus register(Class<? extends Event> cls, EventCallback<? extends Event> callback, String tag) {
+	public <T extends Event> EventBus register(Class<T> cls, EventCallback<T> callback, String tag) {
 		return register(new CallbackSubscription(cls, callback, tag), false);
 	}
 
@@ -104,7 +104,7 @@ public class EventBus {
 	 * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
 	 * @return The EventBus
 	 */
-	public EventBus register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent, String tag) {
+	public <T extends Event> EventBus register(Class<T> cls, EventCallback<T> callback, boolean deliverLastEvent, String tag) {
 		return register(new CallbackSubscription(cls, callback, tag), deliverLastEvent);
 	}
 
