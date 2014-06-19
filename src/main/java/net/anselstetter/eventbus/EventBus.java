@@ -34,335 +34,348 @@ import java.util.Map;
  */
 public class EventBus {
 
-    public static final String DEFAULT_IDENTIFIER = "default";
+	public static final String DEFAULT_IDENTIFIER = "default";
 
-    private final EventTransport transport;
-    private final ThreadEnforcer threadEnforcer;
-    private final Thread runningThread;
-    private final String identifier;
-    private final Map<Class<? extends Event>, List<CallbackSubscription>> subscribers;
-    private final Map<Class<? extends Event>, Event> lastEvent;
-    private final Map<String, CallbackSubscription> taggedSubscriptions;
+	private final EventTransport transport;
+	private final ThreadEnforcer threadEnforcer;
+	private final Thread runningThread;
+	private final String identifier;
+	private final Map<Class<? extends Event>, List<CallbackSubscription>> subscribers;
+	private final Map<Class<? extends Event>, Event> lastEvent;
+	private final Map<String, List<CallbackSubscription>> taggedSubscriptions;
 
-    /**
-     * Constructor
-     *
-     * @param transport      The transport used for event delivery
-     * @param threadEnforcer Thread enforcer
-     * @param identifier     Identifier for this event bus {@link #toString}
-     */
-    public EventBus(EventTransport transport, ThreadEnforcer threadEnforcer, String identifier) {
-        this.transport = transport;
-        this.threadEnforcer = threadEnforcer;
-        this.runningThread = Thread.currentThread();
-        this.identifier = identifier;
-        this.subscribers = new HashMap<>();
-        this.lastEvent = new HashMap<>();
-        this.taggedSubscriptions = new HashMap<>();
-    }
+	/**
+	 * Constructor
+	 *
+	 * @param transport      The transport used for event delivery
+	 * @param threadEnforcer Thread enforcer
+	 * @param identifier     Identifier for this event bus {@link #toString}
+	 */
+	public EventBus(EventTransport transport, ThreadEnforcer threadEnforcer, String identifier) {
+		this.transport = transport;
+		this.threadEnforcer = threadEnforcer;
+		this.runningThread = Thread.currentThread();
+		this.identifier = identifier;
+		this.subscribers = new HashMap<>();
+		this.lastEvent = new HashMap<>();
+		this.taggedSubscriptions = new HashMap<>();
+	}
 
-    /**
-     * Register a callback for a specific event
-     *
-     * @param cls      Lookup class for {@link  #subscribers}
-     * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
-     */
-    public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback) {
-        register(new CallbackSubscription(cls, callback), false);
-    }
+	/**
+	 * Register a callback for a specific event
+	 *
+	 * @param cls      Lookup class for {@link  #subscribers}
+	 * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+	 * @return The EventBus
+	 */
+	public EventBus register(Class<? extends Event> cls, EventCallback<? extends Event> callback) {
+		return register(new CallbackSubscription(cls, callback), false);
+	}
 
-    /**
-     * Register a callback for a specific event
-     *
-     * @param cls              Lookup class for {@link #subscribers}
-     * @param callback         Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
-     * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
-     */
-    public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent) {
-        register(new CallbackSubscription(cls, callback), deliverLastEvent);
-    }
+	/**
+	 * Register a callback for a specific event
+	 *
+	 * @param cls              Lookup class for {@link #subscribers}
+	 * @param callback         Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+	 * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
+	 * @return The EventBus
+	 */
+	public EventBus register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent) {
+		return register(new CallbackSubscription(cls, callback), deliverLastEvent);
+	}
 
-    /**
-     * Register a callback for a specific event
-     *
-     * @param cls      Lookup class for {@link #subscribers}
-     * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
-     * @param tag      A tag for referencing event subscriptions later
-     */
-    public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback, String tag) {
-        register(new CallbackSubscription(cls, callback, tag), false);
-    }
+	/**
+	 * Register a callback for a specific event
+	 *
+	 * @param cls      Lookup class for {@link #subscribers}
+	 * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+	 * @param tag      A tag for referencing event subscriptions later
+	 * @return The EventBus
+	 */
+	public EventBus register(Class<? extends Event> cls, EventCallback<? extends Event> callback, String tag) {
+		return register(new CallbackSubscription(cls, callback, tag), false);
+	}
 
-    /**
-     * Register a callback for a specific event
-     *
-     * @param cls              Lookup class for {@link #subscribers}
-     * @param callback         Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
-     * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
-     */
-    public void register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent, String tag) {
-        register(new CallbackSubscription(cls, callback, tag), deliverLastEvent);
-    }
+	/**
+	 * Register a callback for a specific event
+	 *
+	 * @param cls              Lookup class for {@link #subscribers}
+	 * @param callback         Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+	 * @param deliverLastEvent If the requested event has already been delivered, redeliver it to the subscriber
+	 * @return The EventBus
+	 */
+	public EventBus register(Class<? extends Event> cls, EventCallback<? extends Event> callback, boolean deliverLastEvent, String tag) {
+		return register(new CallbackSubscription(cls, callback, tag), deliverLastEvent);
+	}
 
-    /**
-     * Register a callback for a specific event
-     *
-     * @param subscription Subscription class containing the event, callback and a tag {@link net.anselstetter.eventbus.EventBus.CallbackSubscription}
-     */
-    private void register(CallbackSubscription subscription, boolean deliverLastEvent) {
-        threadEnforcer.enforce(this);
+	/**
+	 * Register a callback for a specific event
+	 *
+	 * @param subscription Subscription class containing the event, callback and a tag {@link net.anselstetter.eventbus.EventBus.CallbackSubscription}
+	 * @return The EventBus
+	 */
+	private EventBus register(CallbackSubscription subscription, boolean deliverLastEvent) {
+		threadEnforcer.enforce(this);
 
-        Class<? extends Event> cls = subscription.getEventClass();
-        EventCallback<? extends Event> callback = subscription.getEventCallback();
-        String tag = subscription.getTag();
+		Class<? extends Event> cls = subscription.getEventClass();
+		EventCallback<? extends Event> callback = subscription.getEventCallback();
+		String tag = subscription.getTag();
 
-        if (!subscribers.containsKey(cls)) {
-            subscribers.put(cls, new ArrayList<CallbackSubscription>());
-        }
+		if (!subscribers.containsKey(cls)) {
+			subscribers.put(cls, new ArrayList<CallbackSubscription>());
+		}
 
-        List<CallbackSubscription> list = subscribers.get(cls);
+		List<CallbackSubscription> list = subscribers.get(cls);
 
-        if (!list.contains(subscription)) {
-            list.add(subscription);
+		if (!list.contains(subscription)) {
+			list.add(subscription);
 
-            if (subscription.getTag() != null) {
-                taggedSubscriptions.put(tag, subscription);
-            }
+			if (subscription.getTag() != null) {
+				if (!taggedSubscriptions.containsKey(subscription.getTag())) {
+					taggedSubscriptions.put(subscription.getTag(), new ArrayList<CallbackSubscription>());
+				}
 
-            if (deliverLastEvent && lastEvent.containsKey(cls)) {
-                deliver(lastEvent.get(cls), subscription);
-            }
-        } else {
-            throw new IllegalStateException("Event bus " + toString() + " already has a registered callback of type: " + callback + " for class: " + cls);
-        }
-    }
+				taggedSubscriptions.get(tag).add(subscription);
+			}
 
-    /**
-     * Unregister a callback for a specific event
-     *
-     * @param subscription Subscription class containing the event, callback and a tag {@link net.anselstetter.eventbus.EventBus.CallbackSubscription}
-     */
-    private void unregister(CallbackSubscription subscription) {
-        threadEnforcer.enforce(this);
+			if (deliverLastEvent && lastEvent.containsKey(cls)) {
+				deliver(lastEvent.get(cls), subscription);
+			}
+		} else {
+			throw new IllegalStateException("Event bus " + toString() + " already has a registered callback of type: " + callback + " for class: " + cls);
+		}
 
-        Class<? extends Event> cls = subscription.getEventClass();
-        EventCallback<? extends Event> callback = subscription.getEventCallback();
-        String tag = subscription.getTag();
+		return this;
+	}
 
-        if (subscribers.containsKey(cls)) {
-            List<CallbackSubscription> list = subscribers.get(cls);
+	/**
+	 * Unregister a callback for a specific event
+	 *
+	 * @param subscription Subscription class containing the event, callback and a tag {@link net.anselstetter.eventbus.EventBus.CallbackSubscription}
+	 */
+	private void unregister(CallbackSubscription subscription) {
+		threadEnforcer.enforce(this);
 
-            if (list.contains(subscription)) {
-                list.remove(subscription);
+		Class<? extends Event> cls = subscription.getEventClass();
+		EventCallback<? extends Event> callback = subscription.getEventCallback();
+		String tag = subscription.getTag();
 
-                if (tag != null) {
-                    taggedSubscriptions.remove(subscription.getTag());
-                }
-            } else {
-                throw new IllegalStateException("Event bus " + toString() + " does not contain a callback of type: " + callback + " for class: " + cls);
-            }
-        } else {
-            throw new IllegalStateException("Event bus " + toString() + " does not maintain a subscription list of class: " + cls);
-        }
-    }
+		if (subscribers.containsKey(cls)) {
+			List<CallbackSubscription> list = subscribers.get(cls);
 
-    /**
-     * Unregister a callback for a specific event
-     *
-     * @param cls      Lookup class for {@link  #subscribers}
-     * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
-     */
-    public void unregister(Class<? extends Event> cls, EventCallback<? extends Event> callback) {
-        unregister(new CallbackSubscription(cls, callback));
-    }
+			if (list.contains(subscription)) {
+				list.remove(subscription);
 
-    /**
-     * Unregister a callback for a specific event
-     *
-     * @param tag A tag for referencing event subscriptions
-     */
-    public void unregister(String tag) {
-        CallbackSubscription subscription = null;
+				if (tag != null) {
+					taggedSubscriptions.remove(subscription.getTag());
+				}
+			} else {
+				throw new IllegalStateException("Event bus " + toString() + " does not contain a callback of type: " + callback + " for class: " + cls);
+			}
+		} else {
+			throw new IllegalStateException("Event bus " + toString() + " does not maintain a subscription list of class: " + cls);
+		}
+	}
 
-        if (hasTaggedSubscriber(tag)) {
-            subscription = taggedSubscriptions.get(tag);
-        }
+	/**
+	 * Unregister a callback for a specific event
+	 *
+	 * @param cls      Lookup class for {@link  #subscribers}
+	 * @param callback Called when an event with the type cls is posted. See {@link #post(net.anselstetter.eventbus.event.Event)}
+	 */
+	public void unregister(Class<? extends Event> cls, EventCallback<? extends Event> callback) {
+		unregister(new CallbackSubscription(cls, callback));
+	}
 
-        if (subscription != null) {
-            unregister(subscription);
-        } else {
-            throw new IllegalStateException("Event bus " + toString() + " does not contain a event subscription matching this tag: " + tag);
-        }
-    }
+	/**
+	 * Unregister a callback for a specific event
+	 *
+	 * @param tag A tag for referencing event subscriptions
+	 */
+	public void unregister(String tag) {
+		List<CallbackSubscription> subscriptions = null;
 
-    /**
-     * Clear all subscribers and event history
-     */
-    public void reset() {
-        subscribers.clear();
-        lastEvent.clear();
-        taggedSubscriptions.clear();
-    }
+		if (hasTaggedSubscriber(tag)) {
+			subscriptions = taggedSubscriptions.get(tag);
+		}
 
-    /**
-     * Notify all subscribers listening to the posted event type
-     *
-     * @param event Event to deliver to all subscribers
-     */
+		if (subscriptions != null) {
+			for (CallbackSubscription subscription : subscriptions) {
+				unregister(subscription);
+			}
+		} else {
+			throw new IllegalStateException("Event bus " + toString() + " does not contain a event subscription matching this tag: " + tag);
+		}
+	}
 
-    public void post(Event event) {
-        threadEnforcer.enforce(this);
-        lastEvent.put(event.getClass(), event);
+	/**
+	 * Clear all subscribers and event history
+	 */
+	public void reset() {
+		subscribers.clear();
+		lastEvent.clear();
+		taggedSubscriptions.clear();
+	}
 
-        List<CallbackSubscription> list = subscribers.get(event.getClass());
+	/**
+	 * Notify all subscribers listening to the posted event type
+	 *
+	 * @param event Event to deliver to all subscribers
+	 */
 
-        if (list != null) {
-            for (CallbackSubscription subscription : list) {
-                deliver(event, subscription);
-            }
-        }
-    }
+	public void post(Event event) {
+		threadEnforcer.enforce(this);
+		lastEvent.put(event.getClass(), event);
 
-    @SuppressWarnings("unchecked")
-    private void deliver(Event event, CallbackSubscription subscription) {
-        transport.deliver(event, (EventCallback<Event>) subscription.getEventCallback());
-    }
+		List<CallbackSubscription> list = subscribers.get(event.getClass());
 
-    /**
-     * Get the number of registered subscribers for an event type
-     *
-     * @param cls Lookup class for {@link  #subscribers}
-     */
-    public int getSubscriberCountForEvent(Class<? extends Event> cls) {
-        if (!subscribers.containsKey(cls)) {
-            return 0;
-        }
+		if (list != null) {
+			for (CallbackSubscription subscription : list) {
+				deliver(event, subscription);
+			}
+		}
+	}
 
-        return subscribers.get(cls).size();
-    }
+	@SuppressWarnings("unchecked")
+	private void deliver(Event event, CallbackSubscription subscription) {
+		transport.deliver(event, (EventCallback<Event>) subscription.getEventCallback());
+	}
 
-    /**
-     * Get the number of registered subscribers for an event type
-     *
-     * @param tag A tag for referencing event subscriptions
-     */
-    public boolean hasTaggedSubscriber(String tag) {
-        return taggedSubscriptions.containsKey(tag);
-    }
+	/**
+	 * Get the number of registered subscribers for an event type
+	 *
+	 * @param cls Lookup class for {@link  #subscribers}
+	 */
+	public int getSubscriberCountForEvent(Class<? extends Event> cls) {
+		if (!subscribers.containsKey(cls)) {
+			return 0;
+		}
 
-    /**
-     * Returns the thread, where the bus was instantiated. Can be used in {@link net.anselstetter.eventbus.ThreadEnforcer}
-     *
-     * @return Current thread
-     */
-    public Thread getRunningThread() {
-        return runningThread;
-    }
+		return subscribers.get(cls).size();
+	}
 
-    @Override
-    public String toString() {
-        return "[EventBus \"" + identifier + "\"]";
-    }
+	/**
+	 * Get the number of registered subscribers for an event type
+	 *
+	 * @param tag A tag for referencing event subscriptions
+	 */
+	public boolean hasTaggedSubscriber(String tag) {
+		return taggedSubscriptions.containsKey(tag);
+	}
 
-    /**
-     * Holder class to encapsulate an event, callback and tag
-     */
-    private class CallbackSubscription {
+	/**
+	 * Returns the thread, where the bus was instantiated. Can be used in {@link net.anselstetter.eventbus.ThreadEnforcer}
+	 *
+	 * @return Current thread
+	 */
+	public Thread getRunningThread() {
+		return runningThread;
+	}
 
-        private final Class<? extends Event> eventClass;
-        private final EventCallback<? extends Event> eventCallback;
-        private final String tag;
+	@Override
+	public String toString() {
+		return "[EventBus \"" + identifier + "\"]";
+	}
 
-        private CallbackSubscription(Class<? extends Event> eventClass, EventCallback<? extends Event> eventCallback) {
-            this(eventClass, eventCallback, null);
-        }
+	/**
+	 * Holder class to encapsulate an event, callback and tag
+	 */
+	private class CallbackSubscription {
 
-        private CallbackSubscription(Class<? extends Event> eventClass, EventCallback<? extends Event> eventCallback, String tag) {
-            this.eventClass = eventClass;
-            this.eventCallback = eventCallback;
-            this.tag = tag;
-        }
+		private final Class<? extends Event> eventClass;
+		private final EventCallback<? extends Event> eventCallback;
+		private final String tag;
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+		private CallbackSubscription(Class<? extends Event> eventClass, EventCallback<? extends Event> eventCallback) {
+			this(eventClass, eventCallback, null);
+		}
 
-            CallbackSubscription that = (CallbackSubscription) o;
+		private CallbackSubscription(Class<? extends Event> eventClass, EventCallback<? extends Event> eventCallback, String tag) {
+			this.eventClass = eventClass;
+			this.eventCallback = eventCallback;
+			this.tag = tag;
+		}
 
-            return eventCallback.equals(that.eventCallback);
-        }
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
 
-        @Override
-        public int hashCode() {
-            return eventCallback.hashCode();
-        }
+			CallbackSubscription that = (CallbackSubscription) o;
 
-        public Class<? extends Event> getEventClass() {
-            return eventClass;
-        }
+			return eventCallback.equals(that.eventCallback);
+		}
 
-        public EventCallback<? extends Event> getEventCallback() {
-            return eventCallback;
-        }
+		@Override
+		public int hashCode() {
+			return eventCallback.hashCode();
+		}
 
-        public String getTag() {
-            return tag;
-        }
-    }
+		public Class<? extends Event> getEventClass() {
+			return eventClass;
+		}
 
-    /**
-     * Subscriber callbacks must implement this interface. See {@link #register(Class, net.anselstetter.eventbus.EventBus.EventCallback)}
-     * and {@link #unregister(Class, net.anselstetter.eventbus.EventBus.EventCallback)}
-     *
-     * @param <T> Subclass of Event
-     */
-    public static interface EventCallback<T extends Event> {
+		public EventCallback<? extends Event> getEventCallback() {
+			return eventCallback;
+		}
 
-        public void onNotify(T event);
-    }
+		public String getTag() {
+			return tag;
+		}
+	}
 
-    /**
-     * Convenience class to instantiate {@link #EventBus(net.anselstetter.eventbus.transport.EventTransport, ThreadEnforcer, String)}
-     */
-    public static class Builder {
+	/**
+	 * Subscriber callbacks must implement this interface. See {@link #register(Class, net.anselstetter.eventbus.EventBus.EventCallback)}
+	 * and {@link #unregister(Class, net.anselstetter.eventbus.EventBus.EventCallback)}
+	 *
+	 * @param <T> Subclass of Event
+	 */
+	public static interface EventCallback<T extends Event> {
 
-        private EventTransport transport;
-        private ThreadEnforcer threadEnforcer;
-        private String identifier;
+		public void onNotify(T event);
+	}
 
-        public Builder setTransport(EventTransport transport) {
-            this.transport = transport;
+	/**
+	 * Convenience class to instantiate {@link #EventBus(net.anselstetter.eventbus.transport.EventTransport, ThreadEnforcer, String)}
+	 */
+	public static class Builder {
 
-            return this;
-        }
+		private EventTransport transport;
+		private ThreadEnforcer threadEnforcer;
+		private String identifier;
 
-        public Builder setThreadEnforcer(ThreadEnforcer threadEnforcer) {
-            this.threadEnforcer = threadEnforcer;
+		public Builder setTransport(EventTransport transport) {
+			this.transport = transport;
 
-            return this;
-        }
+			return this;
+		}
 
-        public Builder setIdentifier(String identifier) {
-            this.identifier = identifier;
+		public Builder setThreadEnforcer(ThreadEnforcer threadEnforcer) {
+			this.threadEnforcer = threadEnforcer;
 
-            return this;
-        }
+			return this;
+		}
 
-        public EventBus build() {
-            if (transport == null) {
-                transport = new InMemoryTransport();
-            }
+		public Builder setIdentifier(String identifier) {
+			this.identifier = identifier;
 
-            if (threadEnforcer == null) {
-                threadEnforcer = ThreadEnforcer.ANY;
-            }
+			return this;
+		}
 
-            if (identifier == null) {
-                identifier = EventBus.DEFAULT_IDENTIFIER;
-            }
+		public EventBus build() {
+			if (transport == null) {
+				transport = new InMemoryTransport();
+			}
 
-            return new EventBus(transport, threadEnforcer, identifier);
-        }
-    }
+			if (threadEnforcer == null) {
+				threadEnforcer = ThreadEnforcer.ANY;
+			}
+
+			if (identifier == null) {
+				identifier = EventBus.DEFAULT_IDENTIFIER;
+			}
+
+			return new EventBus(transport, threadEnforcer, identifier);
+		}
+	}
 }

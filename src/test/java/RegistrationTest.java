@@ -90,6 +90,7 @@ public class RegistrationTest {
     public void testUnRegistrationViaExistingTagShouldPass() {
         bus.reset();
         bus.register(TestEvent.class, callback, TAG);
+		bus.register(NopeEvent.class,callback2, TAG);
         bus.unregister(TAG);
 
         assertEquals("subscriber tag error", false, bus.hasTaggedSubscriber(TAG));
