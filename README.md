@@ -9,41 +9,56 @@ Usage:
             .build();
 
     // Normal subscription
-    bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
-        @Override
-        public void onNotify(TestEvent event) {
-            // Do something
-        }
-    });
+    bus
+        .on(TestEvent.class)
+        .callback(new EventCallback<TestEvent>() {
+            @Override
+            public void onEvent(TestEvent event) {
+                // Do something
+            }
+        });
 
     // Deliver last posted event on registration
-    bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
-        @Override
-        public void onNotify(TestEvent event) {
-            // Do something
-        }
-    }, true);
+    bus
+        .on(TestEvent.class)
+        .deliverLastEvent()
+        .callback(new EventCallback<TestEvent>() {
+            @Override
+            public void onEvent(TestEvent event) {
+                // Do something
+            }
+        });
 
     // Tag based subscription
     // You can call bus.unregister("TAG") later
-    bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
-        @Override
-        public void onNotify(TestEvent event) {
-            // Do something
-        }
-    }, "TAG");
-
-    // Tag based subscription with last event delivery on registration
-    bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
-        @Override
-        public void onNotify(TestEvent event) {
-            // Do something
-        }
-    }, true, "TAG");
+    bus
+        .on(TestEvent.class)
+        .setTag("TAG")
+        .callback(new EventCallback<TestEvent>() {
+            @Override
+            public void onEvent(TestEvent event) {
+                // Do something
+            }
+        });
+    
+    // Set the priority for event delivery
+    // The highest number means the highest priority
+    bus
+        .on(TestEvent.class)
+        .setPriority(100)
+        .callback(new EventCallback<TestEvent>() {
+            @Override
+            public void onEvent(TestEvent event) {
+                // Do something
+            }
+        });
 
     bus.post(new TestEvent("payload"));
 
-    bus.unregister(TestEvent.class, callback);
+    bus
+        .on(TestEvent.class)
+        .unregister(callback);
+        
     bus.unregister("TAG")
 
 This bus does not guarantee uniqueness.

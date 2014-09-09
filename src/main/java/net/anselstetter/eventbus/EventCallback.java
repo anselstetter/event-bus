@@ -14,8 +14,16 @@
  * limitations under the License.
  */
 
-package net.anselstetter.eventbus.event;
+package net.anselstetter.eventbus;
 
-public abstract class Event {
+import net.anselstetter.eventbus.event.Event;
 
+/**
+ * Subscriber callbacks must implement this interface
+ *
+ * @param <T> Subclass of Event
+ */
+public interface EventCallback<T extends Event> {
+
+    public void onEvent(T event);
 }

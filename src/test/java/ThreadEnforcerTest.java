@@ -15,30 +15,20 @@
  */
 
 import net.anselstetter.eventbus.EventBus;
+import net.anselstetter.eventbus.EventCallback;
 import net.anselstetter.eventbus.ThreadEnforcer;
 import net.anselstetter.eventbus.event.Event;
+
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-/**
- * @author Florian Anselstetter
- *         Date: 3/15/14
- *         Time: 5:45 PM
- */
-
 public class ThreadEnforcerTest {
 
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    private class TestEvent extends Event {
-
-    }
-
-    private final EventBus.EventCallback<TestEvent> callback = new EventBus.EventCallback<TestEvent>() {
+    private final EventCallback<TestEvent> callback = new EventCallback<TestEvent>() {
         @Override
-        public void onNotify(TestEvent event) {
+        public void onEvent(TestEvent event) {
 
         }
     };
@@ -47,14 +37,23 @@ public class ThreadEnforcerTest {
             .setThreadEnforcer(ThreadEnforcer.SAME)
             .build();
 
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
+
+    @After
+    public void reset() {
+        bus.reset();
+    }
+
     @Test
     public void testRegisterOnDifferentThreadShouldFail() {
-        bus.reset();
-
         Thread newThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                bus.register(TestEvent.class, callback);
+                bus
+                        .on(TestEvent.class)
+                        .callback(callback);
+
                 exception.expect(IllegalStateException.class);
             }
         });
@@ -63,19 +62,24 @@ public class ThreadEnforcerTest {
 
     @Test
     public void testRegisterOnSameThreadShouldPass() {
-        bus.reset();
-        bus.register(TestEvent.class, callback);
+        bus
+                .on(TestEvent.class)
+                .callback(callback);
     }
 
     @Test
     public void testUnregisterOnDifferentThreadShouldFail() {
-        bus.reset();
-        bus.register(TestEvent.class, callback);
+        bus
+                .on(TestEvent.class)
+                .callback(callback);
 
         Thread newThread = new Thread(new Runnable() {
             @Override
             public void run() {
-                bus.unregister(TestEvent.class, callback);
+                bus
+                        .on(TestEvent.class)
+                        .unregister(callback);
+
                 exception.expect(IllegalStateException.class);
             }
         });
@@ -84,20 +88,25 @@ public class ThreadEnforcerTest {
 
     @Test
     public void testUnregisterOnSameThreadShouldPass() {
-        bus.reset();
-        bus.register(TestEvent.class, callback);
-        bus.unregister(TestEvent.class, callback);
+        bus
+                .on(TestEvent.class)
+                .callback(callback);
+        bus
+                .on(TestEvent.class)
+                .unregister(callback);
     }
 
     @Test
     public void testPostOnDifferentThreadShouldFail() {
-        bus.reset();
-        bus.register(TestEvent.class, callback);
+        bus
+                .on(TestEvent.class)
+                .callback(callback);
 
         Thread newThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 bus.post(new TestEvent());
+
                 exception.expect(IllegalStateException.class);
             }
         });
@@ -106,8 +115,14 @@ public class ThreadEnforcerTest {
 
     @Test
     public void testPostOnSameThreadShouldPass() {
-        bus.reset();
-        bus.register(TestEvent.class, callback);
+        bus
+                .on(TestEvent.class)
+                .callback(callback);
+
         bus.post(new TestEvent());
+    }
+
+    private class TestEvent extends Event {
+
     }
 }
