@@ -88,11 +88,11 @@ public class CallbackTest {
         bus
                 .on(TestEvent.class)
                 .callback(new EventCallback<TestEvent>() {
-            @Override
-            public void onEvent(TestEvent event) {
-                result = event.TEST;
-            }
-        });
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        result = event.TEST;
+                    }
+                });
 
         bus.post(new TestEvent(EXPECTED_RESULT));
 
@@ -119,11 +119,11 @@ public class CallbackTest {
         bus
                 .on(TestEvent.class)
                 .callback(new EventCallback<TestEvent>() {
-            @Override
-            public void onEvent(TestEvent event) {
-                result = event.TEST;
-            }
-        });
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        result = event.TEST;
+                    }
+                });
 
         assertEquals("result should be null", null, result);
     }
