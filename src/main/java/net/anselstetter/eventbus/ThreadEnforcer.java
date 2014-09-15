@@ -16,19 +16,7 @@
 
 package net.anselstetter.eventbus;
 
-/**
- * @author Florian Anselstetter
- *         Date: 3/15/14
- *         Time: 5:11 PM
- */
 public interface ThreadEnforcer {
-
-    /**
-     * Enforce calling thread policy
-     *
-     * @param eventBus The used event bus
-     */
-    public void enforce(EventBus eventBus);
 
     // Allow any thread.
     ThreadEnforcer ANY = new ThreadEnforcer() {
@@ -37,14 +25,21 @@ public interface ThreadEnforcer {
 
         }
     };
-
     // Allow operations only on the same thread.
     ThreadEnforcer SAME = new ThreadEnforcer() {
         @Override
         public void enforce(EventBus eventBus) {
             if (Thread.currentThread() != eventBus.getRunningThread()) {
-                throw new IllegalStateException("Event bus " + eventBus + " accessed from another thread " + Thread.currentThread());
+                throw new IllegalStateException(
+                        "Event bus " + eventBus + " accessed from another thread " + Thread.currentThread());
             }
         }
     };
+
+    /**
+     * Enforce calling thread policy
+     *
+     * @param eventBus The used event bus
+     */
+    public void enforce(EventBus eventBus);
 }

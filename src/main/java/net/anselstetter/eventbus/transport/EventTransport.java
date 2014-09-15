@@ -16,14 +16,9 @@
 
 package net.anselstetter.eventbus.transport;
 
-import net.anselstetter.eventbus.EventBus;
+import net.anselstetter.eventbus.EventCallback;
 import net.anselstetter.eventbus.event.Event;
 
-/**
- * @author Florian Anselstetter
- *         Date: 3/15/14
- *         Time: 5:38 PM
- */
 public interface EventTransport {
 
     /**
@@ -32,5 +27,5 @@ public interface EventTransport {
      * @param event    The posted Event
      * @param callback The callback to invoke
      */
-    public void deliver(Event event, EventBus.EventCallback<Event> callback);
+    public <T extends Event> void deliver(T event, EventCallback<T> callback);
 }

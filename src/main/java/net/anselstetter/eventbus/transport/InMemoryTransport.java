@@ -16,18 +16,13 @@
 
 package net.anselstetter.eventbus.transport;
 
-import net.anselstetter.eventbus.EventBus;
+import net.anselstetter.eventbus.EventCallback;
 import net.anselstetter.eventbus.event.Event;
 
-/**
- * @author Florian Anselstetter
- *         Date: 3/15/14
- *         Time: 5:39 PM
- */
 public class InMemoryTransport implements EventTransport {
 
     @Override
-    public void deliver(Event event, EventBus.EventCallback<Event> callback) {
-        callback.onNotify(event);
+    public <T extends Event> void deliver(T event, EventCallback<T> callback) {
+        callback.onEvent(event);
     }
 }

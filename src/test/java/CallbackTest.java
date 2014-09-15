@@ -15,19 +15,118 @@
  */
 
 import net.anselstetter.eventbus.EventBus;
+import net.anselstetter.eventbus.EventCallback;
 import net.anselstetter.eventbus.event.Event;
+
+import org.junit.After;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author Florian Anselstetter
- *         Date: 3/15/14
- *         Time: 7:27 PM
- */
 public class CallbackTest {
 
     final String EXPECTED_RESULT = "SUCCESS";
+
+    private final EventBus bus = new EventBus.Builder()
+            .build();
+
+    private String result;
+
+    @After
+    public void reset() {
+        bus.reset();
+    }
+
+    @Test
+    public void testHighestPriorityShouldDeliverFirst() {
+        final List<Integer> priorities = new ArrayList<Integer>();
+
+        bus
+                .on(TestEvent.class)
+                .setPriority(100)
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        priorities.add(100);
+                    }
+                });
+
+        bus
+                .on(TestEvent.class)
+                .setPriority(10)
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        priorities.add(10);
+                    }
+                });
+
+        bus
+                .on(TestEvent.class)
+                .setPriority(1000)
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        priorities.add(1000);
+                    }
+                });
+
+        bus.post(new TestEvent("test"));
+
+        assertEquals("result should be 1000", 1000, (int) priorities.get(0));
+        assertEquals("result should be 100", 100, (int) priorities.get(1));
+        assertEquals("result should be 10", 10, (int) priorities.get(2));
+    }
+
+    @Test
+    public void testDelivery() {
+        result = null;
+
+        bus
+                .on(TestEvent.class)
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        result = event.TEST;
+                    }
+                });
+
+        bus.post(new TestEvent(EXPECTED_RESULT));
+
+        assertEquals("result should be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
+    }
+
+    @Test
+    public void testDeliveryWithInitialEvent() {
+        bus.post(new TestEvent(EXPECTED_RESULT));
+        bus
+                .on(TestEvent.class)
+                .deliverLastEvent()
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        result = event.TEST;
+                    }
+                });
+
+        assertEquals("result should be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
+
+        result = null;
+
+        bus
+                .on(TestEvent.class)
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        result = event.TEST;
+                    }
+                });
+
+        assertEquals("result should be null", null, result);
+    }
 
     private class TestEvent extends Event {
 
@@ -36,52 +135,5 @@ public class CallbackTest {
         public TestEvent(String test) {
             TEST = test;
         }
-    }
-
-    private final EventBus bus = new EventBus.Builder()
-            .build();
-
-    private String result;
-
-    @Test
-    public void testDelivery() {
-        result = null;
-
-        bus.reset();
-        bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
-            @Override
-            public void onNotify(TestEvent event) {
-                result = event.TEST;
-            }
-        });
-
-        bus.post(new TestEvent(EXPECTED_RESULT));
-
-        assertEquals("result shoud be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
-    }
-
-    @Test
-    public void testDeliveryWithInitialEvent() {
-        bus.reset();
-        bus.post(new TestEvent(EXPECTED_RESULT));
-        bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
-            @Override
-            public void onNotify(TestEvent event) {
-                result = event.TEST;
-            }
-        }, true);
-
-        assertEquals("result shoud be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
-
-        result = null;
-
-        bus.register(TestEvent.class, new EventBus.EventCallback<TestEvent>() {
-            @Override
-            public void onNotify(TestEvent event) {
-                result = event.TEST;
-            }
-        });
-
-        assertEquals("result shoud be null", null, result);
     }
 }
