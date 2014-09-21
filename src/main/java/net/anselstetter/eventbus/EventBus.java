@@ -26,6 +26,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * An event bus to deliver events to subscribers.
@@ -41,6 +44,8 @@ public class EventBus {
     private final EventTransport transport;
 
     private final ThreadEnforcer threadEnforcer;
+
+    private final ExecutorService executorService;
 
     private final Thread runningThread;
 
@@ -59,9 +64,11 @@ public class EventBus {
      * @param threadEnforcer Thread enforcer
      * @param identifier     Identifier for this event bus {@link #toString}
      */
-    private EventBus(EventTransport transport, ThreadEnforcer threadEnforcer, String identifier) {
+    private EventBus(EventTransport transport, ThreadEnforcer threadEnforcer, ExecutorService executorService,
+            String identifier) {
         this.transport = transport;
         this.threadEnforcer = threadEnforcer;
+        this.executorService = executorService;
         this.runningThread = Thread.currentThread();
         this.identifier = identifier;
         this.subscribers = new HashMap<Class<? extends Event>, List<CallbackSubscription>>();
@@ -243,7 +250,6 @@ public class EventBus {
      *
      * @param event Event to deliver to all subscribers
      */
-
     public void post(Event event) {
         threadEnforcer.enforce(this);
         lastEvent.put(event.getClass(), event);
@@ -255,6 +261,36 @@ public class EventBus {
                 deliver(event, subscription);
             }
         }
+    }
+
+    /**
+     * Asynchronously notify all subscribers listening to the posted event type
+     *
+     * @param event Event to deliver to all subscribers
+     * @return Future
+     */
+    public Future async(final Event event) {
+        return async(event, null);
+    }
+
+    /**
+     * Asynchronously notify all subscribers listening to the posted event type
+     *
+     * @param event    Event to deliver to all subscribers
+     * @param listener Callback to notify when all subscribers have been received the event
+     * @return Future
+     */
+    public Future async(final Event event, final AsyncNotificationListener listener) {
+        return executorService.submit(new Runnable() {
+            @Override
+            public void run() {
+                post(event);
+
+                if (listener != null) {
+                    listener.onFinish();
+                }
+            }
+        });
     }
 
     /**
@@ -302,6 +338,14 @@ public class EventBus {
     @Override
     public String toString() {
         return "[EventBus \"" + identifier + "\"]";
+    }
+
+    /**
+     * Interface for asynchronous event delivery
+     */
+    public static interface AsyncNotificationListener {
+
+        public void onFinish();
     }
 
     /**
@@ -357,13 +401,15 @@ public class EventBus {
 
     /**
      * Convenience class to instantiate {@link #EventBus(net.anselstetter.eventbus.transport.EventTransport,
-     * ThreadEnforcer, String)}
+     * ThreadEnforcer, java.util.concurrent.ExecutorService, String)}
      */
     public static class Builder {
 
         private EventTransport transport;
 
         private ThreadEnforcer threadEnforcer;
+
+        private ExecutorService executorService;
 
         private String identifier;
 
@@ -375,6 +421,12 @@ public class EventBus {
 
         public Builder setThreadEnforcer(ThreadEnforcer threadEnforcer) {
             this.threadEnforcer = threadEnforcer;
+
+            return this;
+        }
+
+        public Builder setExecutorService(ExecutorService executorService) {
+            this.executorService = executorService;
 
             return this;
         }
@@ -394,18 +446,22 @@ public class EventBus {
                 threadEnforcer = ThreadEnforcer.ANY;
             }
 
+            if (executorService == null) {
+                executorService = Executors.newFixedThreadPool(10);
+            }
+
             if (identifier == null) {
                 identifier = EventBus.DEFAULT_IDENTIFIER;
             }
 
-            return new EventBus(transport, threadEnforcer, identifier);
+            return new EventBus(transport, threadEnforcer, executorService, identifier);
         }
     }
 
     /**
      * Holder class to encapsulate an event, callback and tag
      */
-    private class CallbackSubscription<T extends Event> {
+    private static class CallbackSubscription<T extends Event> {
 
         private final Class<T> eventClass;
 

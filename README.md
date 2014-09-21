@@ -5,6 +5,7 @@ Usage:
     EventBus bus = new EventBus.Builder()
             .setTransport(new InMemoryTransport())
             .setThreadEnforcer(ThreadEnforcer.ANY)
+            .setExecutorService(Executors.newFixedThreadPool(10))
             .setIdentifier("identifier")
             .build();
 
@@ -53,12 +54,26 @@ Usage:
                 }
             });
 
+    // Deliver an event synchronously
     bus.post(new TestEvent("payload"));
+    
+    // Deliver an event asynchronously
+    bus.async(new TestEvent("payload"));
+    
+    // Deliver an event asynchronously with a finished notification
+    bus.async(new TestEvent("payload"), new EventBus.AsyncNotificationListener() {
+        @Override
+        public void onFinish() {
+            // Do something
+        }
+    });
 
+    // Unregister an event callback
     bus
             .on(TestEvent.class)
             .unregister(callback);
         
+    // Unregister all event callbacks with the same tag
     bus.unregister("TAG")
 
 This bus does not guarantee uniqueness.
