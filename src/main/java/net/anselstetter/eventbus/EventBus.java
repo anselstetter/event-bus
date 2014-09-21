@@ -270,10 +270,25 @@ public class EventBus {
      * @return Future
      */
     public Future async(final Event event) {
+        return async(event, null);
+    }
+
+    /**
+     * Asynchronously notify all subscribers listening to the posted event type
+     *
+     * @param event    Event to deliver to all subscribers
+     * @param listener Callback to notify when all subscribers have been received the event
+     * @return Future
+     */
+    public Future async(final Event event, final AsyncNotificationListener listener) {
         return executorService.submit(new Runnable() {
             @Override
             public void run() {
                 post(event);
+
+                if (listener != null) {
+                    listener.onFinish();
+                }
             }
         });
     }
@@ -323,6 +338,14 @@ public class EventBus {
     @Override
     public String toString() {
         return "[EventBus \"" + identifier + "\"]";
+    }
+
+    /**
+     * Interface for asynchronous event delivery
+     */
+    public static interface AsyncNotificationListener {
+
+        public void onFinish();
     }
 
     /**
@@ -438,7 +461,7 @@ public class EventBus {
     /**
      * Holder class to encapsulate an event, callback and tag
      */
-    private class CallbackSubscription<T extends Event> {
+    private static class CallbackSubscription<T extends Event> {
 
         private final Class<T> eventClass;
 

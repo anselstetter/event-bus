@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class CallbackTest {
 
@@ -36,9 +38,13 @@ public class CallbackTest {
 
     private String result;
 
+    private boolean finished = false;
+
     @After
     public void reset() {
         bus.reset();
+        result = null;
+        finished = false;
     }
 
     @Test
@@ -84,8 +90,6 @@ public class CallbackTest {
 
     @Test
     public void testDelivery() {
-        result = null;
-
         bus
                 .on(TestEvent.class)
                 .callback(new EventCallback<TestEvent>() {
@@ -131,8 +135,6 @@ public class CallbackTest {
 
     @Test
     public void testAsynchronouslyDelivery() {
-        result = null;
-
         bus
                 .on(TestEvent.class)
                 .callback(new EventCallback<TestEvent>() {
@@ -151,6 +153,37 @@ public class CallbackTest {
 
         assertEquals("result should be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
     }
+
+    @Test
+    public void testAsynchronouslyDeliveryCallback() {
+        bus
+                .on(TestEvent.class)
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        result = event.TEST;
+                    }
+                });
+
+        assertFalse("finished should be false", finished);
+
+        Future future = bus.async(new TestEvent(EXPECTED_RESULT), new EventBus.AsyncNotificationListener() {
+            @Override
+            public void onFinish() {
+                finished = true;
+            }
+        });
+
+        try {
+            future.get();
+        } catch (Exception ignored) {
+
+        }
+
+        assertTrue("finished should be true", finished);
+        assertEquals("result should be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
+    }
+
 
     private class TestEvent extends Event {
 
