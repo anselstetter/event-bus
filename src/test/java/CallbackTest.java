@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 
 import static org.junit.Assert.assertEquals;
 
@@ -126,6 +127,29 @@ public class CallbackTest {
                 });
 
         assertEquals("result should be null", null, result);
+    }
+
+    @Test
+    public void testAsynchronouslyDelivery() {
+        result = null;
+
+        bus
+                .on(TestEvent.class)
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        result = event.TEST;
+                    }
+                });
+
+        Future future = bus.async(new TestEvent(EXPECTED_RESULT));
+        try {
+            future.get();
+        } catch (Exception ignored) {
+
+        }
+
+        assertEquals("result should be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
     }
 
     private class TestEvent extends Event {
