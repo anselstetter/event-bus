@@ -22,6 +22,16 @@ import net.anselstetter.eventbus.event.Event;
 public interface EventTransport {
 
     /**
+     * Standard transport on any thread
+     */
+    public EventTransport STANDARD = new EventTransport() {
+        @Override
+        public <T extends Event> void deliver(T event, EventCallback<T> callback) {
+            callback.onEvent(event);
+        }
+    };
+
+    /**
      * Delivers the event to its listener
      *
      * @param event    The posted Event

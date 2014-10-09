@@ -18,7 +18,6 @@ package net.anselstetter.eventbus;
 
 import net.anselstetter.eventbus.event.Event;
 import net.anselstetter.eventbus.transport.EventTransport;
-import net.anselstetter.eventbus.transport.InMemoryTransport;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -439,7 +438,7 @@ public class EventBus {
 
         public EventBus build() {
             if (transport == null) {
-                transport = new InMemoryTransport();
+                transport = EventTransport.STANDARD;
             }
 
             if (threadEnforcer == null) {
