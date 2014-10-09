@@ -3,7 +3,7 @@ Yet another event bus.
 Usage:
 
     EventBus bus = new EventBus.Builder()
-            .setTransport(new InMemoryTransport())
+            .setTransport(EventTransport.STANDARD)
             .setThreadEnforcer(ThreadEnforcer.ANY)
             .setExecutorService(Executors.newFixedThreadPool(10))
             .setIdentifier("identifier")
