@@ -18,15 +18,20 @@ package net.anselstetter.eventbus;
 
 public interface ThreadEnforcer {
 
-    // Allow any thread.
-    ThreadEnforcer ANY = new ThreadEnforcer() {
+    /**
+     * Allow any thread.
+     */
+    public ThreadEnforcer ANY = new ThreadEnforcer() {
         @Override
         public void enforce(EventBus eventBus) {
 
         }
     };
-    // Allow operations only on the same thread.
-    ThreadEnforcer SAME = new ThreadEnforcer() {
+
+    /**
+     * Allow operations only on the same thread.
+     */
+    public ThreadEnforcer SAME = new ThreadEnforcer() {
         @Override
         public void enforce(EventBus eventBus) {
             if (Thread.currentThread() != eventBus.getRunningThread()) {
