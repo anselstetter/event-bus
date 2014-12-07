@@ -56,6 +56,8 @@ public class EventBus {
 
     private final Map<String, List<CallbackSubscription>> taggedSubscriptions;
 
+    private final Map<Class<? extends Event>, EventProvider<? extends Event>> eventProviders;
+
     /**
      * Constructor
      *
@@ -73,6 +75,7 @@ public class EventBus {
         this.subscribers = new HashMap<Class<? extends Event>, List<CallbackSubscription>>();
         this.lastEvent = new HashMap<Class<? extends Event>, Event>();
         this.taggedSubscriptions = new HashMap<String, List<CallbackSubscription>>();
+        this.eventProviders = new HashMap<Class<? extends Event>, EventProvider<? extends Event>>();
     }
 
     /**
@@ -97,9 +100,25 @@ public class EventBus {
      * @param priority         The priority in which the callback will be invoked
      * @return The EventBus
      */
-    private <T extends Event> EventBus register(Class<T> cls, EventCallback<T> callback,
+    private <T extends Event> EventBus registerCallback(Class<T> cls, EventCallback<T> callback,
             boolean deliverLastEvent, String tag, int priority) {
         return register(new CallbackSubscription<T>(cls, callback, tag, priority), deliverLastEvent);
+    }
+
+    /**
+     * Register a provider for a specific event
+     *
+     * @param cls      Lookup class for {@link #subscribers}
+     * @param provider The event provider
+     * @param <T>      Event
+     * @return The EventBus
+     */
+    private <T extends Event> EventBus registerProvider(Class<T> cls, EventProvider<T> provider) {
+        if (!eventProviders.containsKey(cls)) {
+            eventProviders.put(cls, provider);
+        }
+
+        return this;
     }
 
     /**
@@ -135,6 +154,8 @@ public class EventBus {
 
             if (deliverLastEvent && lastEvent.containsKey(cls)) {
                 deliver(lastEvent.get(cls), subscription);
+            } else if (eventProviders.containsKey(cls)) {
+                deliver(eventProviders.get(cls).provideEvent(), subscription);
             }
 
             sort(list);
@@ -242,6 +263,7 @@ public class EventBus {
         subscribers.clear();
         lastEvent.clear();
         taggedSubscriptions.clear();
+        eventProviders.clear();
     }
 
     /**
@@ -388,13 +410,19 @@ public class EventBus {
         }
 
         public EventBus callback(EventCallback<T> callback) {
-            bus.register(cls, callback, deliverLastEvent, tag, priority);
+            bus.registerCallback(cls, callback, deliverLastEvent, tag, priority);
 
             return bus;
         }
 
         public void unregister(EventCallback<T> callback) {
             bus.unregister(cls, callback);
+        }
+
+        public EventBus provide(EventProvider<T> provider) {
+            bus.registerProvider(cls, provider);
+
+            return bus;
         }
     }
 

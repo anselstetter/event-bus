@@ -16,6 +16,7 @@
 
 import net.anselstetter.eventbus.EventBus;
 import net.anselstetter.eventbus.EventCallback;
+import net.anselstetter.eventbus.EventProvider;
 import net.anselstetter.eventbus.event.Event;
 
 import org.junit.After;
@@ -132,6 +133,31 @@ public class CallbackTest {
 
         assertEquals("result should be null", null, result);
     }
+
+    @Test
+    public void testDeliveryWithInitialProvider() {
+        bus
+                .on(TestEvent.class)
+                .provide(new EventProvider<TestEvent>() {
+                    @Override
+                    public TestEvent provideEvent() {
+                        return new TestEvent(EXPECTED_RESULT);
+                    }
+                });
+
+        bus
+                .on(TestEvent.class)
+                .callback(new EventCallback<TestEvent>() {
+                    @Override
+                    public void onEvent(TestEvent event) {
+                        result = event.TEST;
+                    }
+                });
+
+        assertEquals("result should be " + EXPECTED_RESULT, EXPECTED_RESULT, result);
+        result = null;
+    }
+
 
     @Test
     public void testAsynchronouslyDelivery() {
